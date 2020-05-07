@@ -1,0 +1,12 @@
+---
+- name: Servidor Master Openshift
+  hosts: '***********'
+  gather_facts: false
+  tasks:
+    - name: Entrar dentro do projeto
+      shell: oc project nomeprojeto
+    - name: Deploy Aplicação
+      shell: oc rollout latest dc/nomedaaplicacao
+            
+## 1 - Acesse o Servidor do Master
+## 2 - O usuario que está connectando deve possuir acesso em Cluster Admin no Openshift.
