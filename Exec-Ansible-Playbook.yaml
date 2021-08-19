@@ -6,4 +6,4 @@
     connection: local 
     tasks:
     - name: Executando Ansible do servidor.
-      shell: ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 BackupVolumeToAWS.yml
+      shell: ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 /tmp/BackupVolumeToAWS.yml
