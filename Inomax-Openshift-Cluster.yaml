@@ -1,1 +1,149 @@
+---
+  - name: "Playing with Ansible and Git"
+    hosts: "all"
+    vars:
+      env_key: "viveraventura"
+    connection: local 
+    tasks:
+
+    - name: Limpa lista de Volumes na API
+      shell: |
+        curl -X 'DELETE' 'https://api-openshift.zdzcode.com.br/Openshift/{{env_key}}'
+
+    - name: Limpa pasta de estruturas e recria
+      shell: |
+        rm -rf ./openshift-backup
+        mkdir ./openshift-backup
+
+    - name: "Get Projects"
+      shell: |
+        oc get projects -o json | jq -r '.items[].metadata.name'
+      register: projects_list
+
+    - name: "Echo Projects"
+      shell: |
+        echo {{item}}
+        mkdir ./openshift-backup/{{item}}
+
+        oc project {{item}}
+
+        oc get -o yaml --export all > ./openshift-backup/{{item}}/project.yaml
+        
+        for object in $(oc api-resources --namespaced=true -o name)
+        do
+          oc get -o yaml --export $object > ./openshift-backup/{{item}}/$object.yaml
+        done
+
+        oc get dc -o json > ./openshift-backup/{{item}}/dc.json
+        oc get pv -o json > ./openshift-backup/{{item}}/pv.json
+
+        cd openshift-backup/{{item}}
+        curl  -X 'POST' 'https://api-openshift.zdzcode.com.br/Openshift/project_dc/{{env_key}}' -k --form deploymentConfig=@dc.json --form pv=@pv.json
+        cd ../../
+      #when: item == "zdzcode"
+      loop: "{{projects_list.stdout_lines}}"     
+
+    - name: "Openshift: Executar backup da estrutura do openshift"
+      shell: |  
+        aws s3 sync openshift-backup s3://zdzcode-openshift-311-backup/viveraventura/2021-08-17/openshift-backup
+
+    - name: Buscar lista de volumes persistentes
+      uri:
+        url: https://api-openshift.zdzcode.com.br/Openshift/{{env_key}}
+        method: GET        
+      register: item_list
+
+    - name: Inserir lista de volumes persistentes em uma variavel
+      set_fact:
+        pv_list:  "{{ item_list.json }}"
+
+    - name: "NFS: Executar backup da Lista de Volumes Persistentes para a Amazon"
+      shell: |
+        aws s3 sync {{item.volumePath}} s3://zdzcode-openshift-311-backup/viveraventura/2021-08-17/{{item.project}}}/{{item.deploymentConfig}}/{{item.persistentVolumeClaimName}}/{{item.volumeMountPath}}
+        # echo s3://zdzcode-openshift-311-backup/{{item.project}}}/{{item.deploymentConfig}}/{{item.persistentVolumeClaimName}}/{{item.volumeMountPath}}
+        # aws s3 sync {{item.volumePath}} s3://zdzcode-openshift-311-backup/{{item.project}}}/{{item.deploymentConfig}}/{{item.persistentVolumeClaimName}}/{{item.volumeMountPath}}
+      when: item.storageClassName == "managed-nfs-storage"
+      loop: "{{ pv_list }}"
+
+    - name: "Glusterfs: Executar backup da Lista de Volumes Persistentes para a Amazon"
+      shell: |  
+        mkdir /mnt/{{item.volumePath}}
+        mount -t glusterfs 209.145.60.15:{{item.volumePath}} /mnt/{{item.volumePath}}  
+        aws s3 sync /mnt/{{item.volumePath}} s3://zdzcode-openshift-311-backup/viveraventura/2021-08-17/{{item.project}}/{{item.deploymentConfig}}/{{item.persistentVolumeClaimName}}/{{item.volumeMountPath}}
+
+      when: item.storageClassName == "glusterfs-storage"
+      loop: "{{ pv_list }}"
+
+
+    # - name: "NFS: Executar backup da Lista de Volumes Persistentes para a Amazon"
+    #   community.aws.s3_sync:
+    #     aws_access_key: AKIATZVRI5B7QFFID4MB
+    #     aws_secret_key: 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
+    #     region: us-east-1
+    #     bucket: zdzcode-openshift-311-backup/{{item.project}}}/{{item.deploymentConfig}}/{{item.persistentVolumeClaimName}}/{{item.volumeMountPath}}
+    #     file_root: "{{item.volumePath}}"     
+    #   when: item.storageClassName == "managed-nfs-storage"
+    #   loop: "{{ pv_list }}"
+
+# mkdir ./openshift-backup/{{item}}
+
+ # oc get -o yaml --export all > ./openshift-backup/{{item}}/project.yaml
+
+        # for object in $(oc api-resources --namespaced=true -o name)
+        # do
+        #   oc get -o yaml --export $object > ./openshift-backup/{{item}}/$object.yaml
+        # done
+
+        # oc get -o json --export dc > ./openshift-backup/{{item}}/dc.json
+        # oc get -o json --export pv > ./openshift-backup/{{item}}/pv.json 
+
+
+
+
+
+
+
+
+    # - debug: var=item_list
+
+             #   -H "Content-Type: multipart/form-data; charset=utf-8; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW" \
+
+    # - name: Upload a file via multipart/form-multipart
+    #   uri:
+    #     url: https://api-openshift.zdzcode.com.br/Openshift/project_dc
+    #     method: POST
+    #     body:
+    #       file1:
+    #         filename: /dc_teste.json
+    #         mime_type: application/octet-stream
+    #     content_type: "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW"
+    #   register: item_list
+
+
+    # - name: "Get Projects"
+    #   shell: |
+    #     oc get projects -o json | jq -r '.items[].metadata.name' >> project_list.txt
+    #   register: projects_list
+
+    
+    # - name: "Get Apps"
+    #   shell: |    
+    #     oc project {{ item }}
+        
+    #     oc get dc -o json | jq -r '.items[].metadata.name' >> deployment_config_list.txt
+    #   loop: "{{ projects_list.stdout_lines }}"
+    #   register: dc_list
+
+    # - name: "Get Apps"
+    #   shell: |
+    #     echo {{item.stdout_lines}}        
+    #   loop: "{{ dc_list.results }}"
+
+
+
+     # oc get pods -o json | jq -r '.items[].metadata.name' 
+    # - debug: var=dc_list
+
+
+  #  oc get dc keycloak -o json
 
