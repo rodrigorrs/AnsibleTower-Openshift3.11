@@ -6,7 +6,7 @@
     connection: local 
     tasks:
     - name: Limpa lista de Volumes na API
-      shell: KUBECONFIG=/etc/origin/master/admin.kubeconfig
+      shell: export KUBECONFIG=/etc/origin/master/admin.kubeconfig
     - name: Limpa lista de Volumes na API
       shell: |
         curl -X 'DELETE' 'https://api-openshift.zdzcode.com.br/Openshift/{{env_key}}'
