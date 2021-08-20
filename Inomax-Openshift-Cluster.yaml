@@ -3,7 +3,6 @@
     hosts: "all"
     vars:
       env_key: "viveraventura"
-    connection: local 
     tasks:
     - name: Limpa lista de Volumes na API
       shell: |
@@ -16,7 +15,7 @@
 
     - name: "Get Projects"
       shell: |
-        kubectl get projects -o json | jq -r '.items[].metadata.name'
+        oc get projects -o json | jq -r '.items[].metadata.name'
       register: projects_list
 
     - name: "Echo Projects"
