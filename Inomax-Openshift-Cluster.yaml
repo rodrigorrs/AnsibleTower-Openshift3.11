@@ -6,8 +6,6 @@
     connection: local 
     tasks:
     - name: Limpa lista de Volumes na API
-      shell: export KUBECONFIG=$KUBECONFIG:$HOME/.kube/config
-    - name: Limpa lista de Volumes na API
       shell: |
         curl -X 'DELETE' 'https://api-openshift.zdzcode.com.br/Openshift/{{env_key}}'
 
@@ -18,7 +16,7 @@
 
     - name: "Get Projects"
       shell: |
-        oc get projects -o json | jq -r '.items[].metadata.name'
+        kubectl get projects -o json | jq -r '.items[].metadata.name'
       register: projects_list
 
     - name: "Echo Projects"
