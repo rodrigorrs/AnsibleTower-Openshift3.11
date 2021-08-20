@@ -75,8 +75,6 @@
 
     # - name: "NFS: Executar backup da Lista de Volumes Persistentes para a Amazon"
     #   community.aws.s3_sync:
-    #     aws_access_key: AKIATZVRI5B7QFFID4MB
-    #     aws_secret_key: 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
     #     region: us-east-1
     #     bucket: zdzcode-openshift-311-backup/{{item.project}}}/{{item.deploymentConfig}}/{{item.persistentVolumeClaimName}}/{{item.volumeMountPath}}
     #     file_root: "{{item.volumePath}}"     
