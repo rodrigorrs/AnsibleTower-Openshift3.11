@@ -1,0 +1,7 @@
+---
+- name: Servidor de Backup
+  hosts: '*'
+  gather_facts: false
+  tasks:
+    - name: Realização de backup do SQL SERVER
+      shell: sqlcmd -S localhost -U {{ usuario }} -P {{ senha }} -d master -Q "EXEC dbo.backup_all_databases"
